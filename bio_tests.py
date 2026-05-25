@@ -2,7 +2,7 @@ import streamlit as st
 import random
 from docx import Document
 
-FILE_PATH = "biology.docx"
+FILE_PATH = "тести біо.docx"
 BATCH_SIZE = 20
 
 
