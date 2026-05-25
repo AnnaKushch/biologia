@@ -4,7 +4,7 @@ from docx import Document
 
 FILE_PATH = "тести біо.docx"
 BATCH_SIZE = 20
-st.write(f"🎫 Билет №{st.session_state.ticket_id}")
+
 
 # ---------- LOAD DOC ----------
 def load_docx(file_path):
@@ -12,7 +12,7 @@ def load_docx(file_path):
     return "\n".join([p.text for p in doc.paragraphs])
 
 
-# ---------- PARSE BIOLOGY TESTS ----------
+# ---------- PARSE BIO TESTS ----------
 def parse_bio_tests(text):
     blocks = text.strip().split("\n\n")
     tests = []
@@ -30,7 +30,6 @@ def parse_bio_tests(text):
             if line.startswith("*"):
                 continue
 
-            # убираем A. B. C.
             option = line.split(".", 1)[-1].strip()
 
             if "+" in line:
@@ -55,9 +54,9 @@ def parse_bio_tests(text):
 if st.session_state.get("finished", False):
 
     st.title("📊 Результат биологии")
+    st.write(f"🎫 Билет №{st.session_state.ticket_id}")
 
     st.write(f"**Баллы:** {st.session_state.score} / {BATCH_SIZE}")
-
     st.write("---")
 
     for r in st.session_state.all_results:
@@ -80,9 +79,8 @@ if st.session_state.get("finished", False):
         st.write("---")
 
     if st.button("🔄 Новый тест"):
-        for key in ["i", "score", "checked", "selected", "finished", "all_results"]:
-            if key in st.session_state:
-                del st.session_state[key]
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
         st.rerun()
 
     st.stop()
@@ -97,32 +95,34 @@ try:
         st.error("В файле нет тестов")
         st.stop()
 
-    # ---------- INIT (БИЛЕТ) ----------
+    # ---------- INIT ----------
+    if "ticket_id" not in st.session_state:
+        st.session_state.ticket_id = random.randint(1, 9999)
 
-if "ticket_id" not in st.session_state:
-    st.session_state.ticket_id = random.randint(1, 9999)
+    if "tests_pool" not in st.session_state:
+        random.seed(st.session_state.ticket_id)
+        st.session_state.tests_pool = random.sample(tests, len(tests))
 
-if "tests_pool" not in st.session_state:
-    random.seed(st.session_state.ticket_id)  # фиксируем один билет
+    if "i" not in st.session_state:
+        st.session_state.i = 0
+        st.session_state.score = 0
+        st.session_state.checked = False
+        st.session_state.selected = None
+        st.session_state.all_results = []
 
-    st.session_state.tests_pool = random.sample(tests, len(tests))
+        st.session_state.batch = st.session_state.tests_pool[:BATCH_SIZE]
 
-if "i" not in st.session_state:
-    st.session_state.i = 0
-    st.session_state.score = 0
-    st.session_state.checked = False
-    st.session_state.selected = None
-    st.session_state.all_results = []
+    # ---------- CURRENT QUESTION ----------
+    current = st.session_state.batch[st.session_state.i]
 
-    # формируем билет (20 вопросов)
-    st.session_state.batch = st.session_state.tests_pool[:BATCH_SIZE]
-
-    # ---------- COUNTER ----------
+    # ---------- UI ----------
+    st.write(f"🎫 Билет №{st.session_state.ticket_id}")
     st.write(f"### Вопрос {st.session_state.i + 1} / {BATCH_SIZE}")
     st.write(current["question"])
 
     # ---------- ANSWER ----------
     if not st.session_state.checked:
+
         st.session_state.selected = st.radio(
             "Выбери ответ",
             current["options"],
@@ -166,7 +166,6 @@ if "i" not in st.session_state:
         else:
             st.error(f"❌ Неправильно. Правильный: {correct}")
 
-        # ---------- NEXT ----------
         if st.button("Далее ➡️"):
             st.session_state.i += 1
             st.session_state.checked = False
