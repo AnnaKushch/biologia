@@ -4,7 +4,7 @@ from docx import Document
 
 FILE_PATH = "тести біо.docx"
 BATCH_SIZE = 20
-
+st.write(f"🎫 Билет №{st.session_state.ticket_id}")
 
 # ---------- LOAD DOC ----------
 def load_docx(file_path):
@@ -97,20 +97,25 @@ try:
         st.error("В файле нет тестов")
         st.stop()
 
-    # ---------- INIT ----------
-    if "tests_pool" not in st.session_state:
-        st.session_state.tests_pool = random.sample(tests, len(tests))
+    # ---------- INIT (БИЛЕТ) ----------
 
-    if "i" not in st.session_state:
-        st.session_state.i = 0
-        st.session_state.score = 0
-        st.session_state.checked = False
-        st.session_state.selected = None
-        st.session_state.all_results = []
+if "ticket_id" not in st.session_state:
+    st.session_state.ticket_id = random.randint(1, 9999)
 
-        st.session_state.batch = st.session_state.tests_pool[:BATCH_SIZE]
+if "tests_pool" not in st.session_state:
+    random.seed(st.session_state.ticket_id)  # фиксируем один билет
 
-    current = st.session_state.batch[st.session_state.i]
+    st.session_state.tests_pool = random.sample(tests, len(tests))
+
+if "i" not in st.session_state:
+    st.session_state.i = 0
+    st.session_state.score = 0
+    st.session_state.checked = False
+    st.session_state.selected = None
+    st.session_state.all_results = []
+
+    # формируем билет (20 вопросов)
+    st.session_state.batch = st.session_state.tests_pool[:BATCH_SIZE]
 
     # ---------- COUNTER ----------
     st.write(f"### Вопрос {st.session_state.i + 1} / {BATCH_SIZE}")
