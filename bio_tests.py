@@ -91,7 +91,7 @@ if st.session_state.get("finished", False):
 # ===================== MAIN =====================
 try:
     text = load_docx(FILE_PATH)
-    tests = parse_bio(text)
+    tests = parse_bio_tests(text)
 
     if not tests:
         st.error("В файле нет тестов")
