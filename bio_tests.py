@@ -54,7 +54,7 @@ def parse_bio_tests(text):
 # ===================== FINAL SCREEN =====================
 if st.session_state.get("finished", False):
 
-    st.title("📊 Результат теста")
+    st.title("📊 Результат биологии")
 
     st.write(f"**Баллы:** {st.session_state.score} / {BATCH_SIZE}")
 
@@ -91,156 +91,31 @@ if st.session_state.get("finished", False):
 # ===================== MAIN =====================
 try:
     text = load_docx(FILE_PATH)
-    tests = parse_tests(text)
+    tests = parse_bio_tests(text)
 
     if not tests:
         st.error("В файле нет тестов")
         st.stop()
 
-    # ===================== HOME PAGE =====================
-    if "started" not in st.session_state:
-        st.session_state.started = False
+    # ---------- INIT ----------
+    if "tests_pool" not in st.session_state:
+        st.session_state.tests_pool = random.sample(tests, len(tests))
 
-    if not st.session_state.started:
+    if "i" not in st.session_state:
+        st.session_state.i = 0
+        st.session_state.score = 0
+        st.session_state.checked = False
+        st.session_state.selected = None
+        st.session_state.all_results = []
 
-        st.title("📚 Тренажёр по биологии")
-        st.write("Выбери режим теста:")
+        st.session_state.batch = st.session_state.tests_pool[:BATCH_SIZE]
 
-        mode = st.radio(
-            "Режим",
-            ["🔀 Случайный (20 вопросов)", "📖 По порядку (все вопросы)"]
-        )
-
-        if st.button("▶ Начать"):
-            st.session_state.started = True
-            st.session_state.mode = mode
-            st.session_state.i = 0
-            st.session_state.score = 0
-            st.session_state.checked = False
-            st.session_state.selected = None
-            st.session_state.all_results = []
-
-            # --------- СЛУЧАЙНЫЙ ----------
-            if mode == "🔀 Случайный (20 вопросов)":
-                st.session_state.tests_pool = random.sample(tests, len(tests))
-                st.session_state.batch = st.session_state.tests_pool[:20]
-
-            # --------- ПО ПОРЯДКУ ----------
-            else:
-                st.session_state.tests_pool = tests.copy()
-                st.session_state.batch = tests  # ВСЕ ВОПРОСЫ
-
-            st.rerun()
-
-        st.stop()
-
-    # ===================== CURRENT QUESTION =====================
     current = st.session_state.batch[st.session_state.i]
 
-    st.write(f"### Вопрос {st.session_state.i + 1} / {len(st.session_state.batch)}")
+    # ---------- COUNTER ----------
+    st.write(f"### Вопрос {st.session_state.i + 1} / {BATCH_SIZE}")
     st.write(current["question"])
 
-    # ---------- ANSWER ----------
-    if not st.session_state.checked:
-
-        st.session_state.selected = st.radio(
-            "Выбери ответ",
-            current["options"],
-            key=f"q_{st.session_state.i}"
-        )
-
-        if st.button("Ответить"):
-            st.session_state.checked = True
-
-            is_correct = st.session_state.selected == current["correct"]
-
-            if is_correct:
-                st.session_state.score += 1
-
-            if "results_map" not in st.session_state:
-                st.session_state.results_map = {}
-
-            st.session_state.results_map[st.session_state.i] = {
-                "question": current["question"],
-                "options": current["options"],
-                "selected": st.session_state.selected,
-                "correct": current["correct"],
-                "is_correct": is_correct
-            }
-
-            st.rerun()
-
-    # ---------- RESULT ----------
-    else:
-        correct = current["correct"]
-
-        st.write("---")
-
-        for opt in current["options"]:
-            if opt == correct:
-                st.markdown("🟢 " + opt)
-            elif opt == st.session_state.selected:
-                st.markdown("🔴 " + opt)
-            else:
-                st.markdown("⚪ " + opt)
-
-        if st.session_state.selected == correct:
-            st.success("✅ Правильно")
-        else:
-            st.error(f"❌ Неправильно. Правильный: {correct}")
-
-        if st.button("Далее ➡️"):
-            st.session_state.i += 1
-            st.session_state.checked = False
-            st.session_state.selected = None
-
-            if st.session_state.i >= len(st.session_state.batch):
-                st.session_state.finished = True
-                st.rerun()
-
-            st.rerun()
-
-    correct_count = sum(
-    1 for v in st.session_state.results_map.values()
-    if v["is_correct"]
-    )
-    
-    st.markdown(f"### 🧠 Правильных ответов: {correct_count} / {len(st.session_state.batch)}")
-
-    # ---------- NAVIGATION ----------
-    st.markdown("---")
-    st.markdown("### 📍 Навигация")
-    
-    cols = st.columns(10)
-    
-    for idx in range(len(st.session_state.batch)):
-    
-        col = cols[idx % 10]
-    
-        with col:
-    
-            label = str(idx + 1)
-    
-            if "results_map" in st.session_state and idx in st.session_state.results_map:
-
-                if st.session_state.results_map[idx]["is_correct"]:
-                    label = "🟢 " + label
-                else:
-                    label = "🔴 " + label
-            else:
-                label = "⚪ " + label
-    
-            if st.button(label, key=f"nav_{idx}"):
-    
-                st.session_state.i = idx
-                st.session_state.checked = False
-                st.session_state.selected = None
-    
-                st.rerun()
-
-except Exception as e:
-    st.error(f"Ошибка: {e}")
-    
     # ---------- ANSWER ----------
     if not st.session_state.checked:
         st.session_state.selected = st.radio(
@@ -297,9 +172,6 @@ except Exception as e:
                 st.rerun()
 
             st.rerun()
-
-except Exception as e:
-    st.error(f"Ошибка: {e}")
 
 except Exception as e:
     st.error(f"Ошибка: {e}")
